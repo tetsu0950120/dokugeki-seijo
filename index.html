@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>毒物劇物（実地・性状）一問一答</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --accent-color: #ff6b6b;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+        h1 {
+            font-size: 1.25rem;
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 16px;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: #aaa;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            padding: 20px;
+            margin-bottom: 16px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid #2a2a2a;
+        }
+        .category {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 16px;
+            color: #ffffff;
+            white-space: pre-wrap;
+        }
+        .answer-box {
+            background-color: #2a2a2a;
+            border-left: 4px solid var(--primary-color);
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 12px;
+            display: none;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #e0e0e0;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:active {
+            opacity: 0.8;
+        }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-success { background-color: #2ecc71; color: white; }
+        .btn-danger { background-color: #e74c3c; color: white; }
+        .btn-outline { 
+            background-color: transparent; 
+            border: 1px solid var(--primary-color); 
+            color: var(--primary-color); 
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>毒物劇物（実地・識別・解毒）暗記アプリ</h1>
+
+    <div class="stats">
+        <span>進捗: <span id="current-index">0</span> / <span id="total-count">0</span></span>
+        <span>苦手リスト: <span id="weak-count">0</span>件</span>
+    </div>
+
+    <div class="card" id="quiz-card">
+        <div>
+            <div class="category" id="q-category">区分</div>
+            <div class="question-text" id="q-text">問題を読み込み中...</div>
+        </div>
+
+        <div class="answer-box" id="a-box">
+            <strong>【正解・解説】</strong><br>
+            <span id="a-text">解答のテキスト</span>
+        </div>
+    </div>
+
+    <div id="control-panel">
+        <button class="btn-primary" id="btn-show-answer" onclick="showAnswer()">解答を見る</button>
+        
+        <div class="btn-group hidden" id="judge-buttons">
+            <button class="btn-danger" onclick="answerResult(false)">× 苦手に追加</button>
+            <button class="btn-success" onclick="answerResult(true)">◯ 覚えた！</button>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px; display: flex; gap: 8px;">
+        <button class="btn-outline" onclick="filterWeak()">苦手のみ出題</button>
+        <button class="btn-outline" onclick="resetAll()">全問リセット</button>
+    </div>
+</div>
+
+<script>
+const initialDataset = [
+    {
+        category: "毒物・性状/用途",
+        q: "【性状】黄緑色で特異な刺戟臭を有する気体。空気より重い。\n【用途】漂白剤、水道水の消毒。",
+        a: "塩素（毒物・気体）"
+    },
+    {
+        category: "劇物・性状/用途",
+        q: "【性状】無色透明の吸湿性高粘度液体。水に混ぜると激しく発熱する。\n【用途】脱水剤、肥料・化学薬品原料。",
+        a: "硫酸（劇物）"
+    },
+    {
+        category: "毒物・解毒剤",
+        q: "シアン化カリウム（青酸カリ）やシアン化水素の中毒に対して用いられる代表的な解毒剤は？",
+        a: "チオ硫酸ナトリウム、チオ硫酸水和物（または亜硝酸アミル）"
+    },
+    {
+        category: "毒物・解毒剤",
+        q: "有機リン系殺虫剤（EPN、フェントエート等）の中毒に対して用いられる代表的な解毒剤は？",
+        a: "硫酸アトロピン、PAM（パム / パリドキシン）"
+    },
+    {
+        category: "劇物・漏洩時の中和処理",
+        q: "塩酸または硫酸が漏洩した際、中和・処理するために散布する薬剤として適しているものは？",
+        a: "消石灰（水酸化カルシウム）、炭酸ナトリウム（灰汁）、または水酸化ナトリウム"
+    },
+    {
+        category: "毒物・性状",
+        q: "【性状】黒紫色で金属光沢のある板状結晶。加熱すると容易に紫色の気体に昇華する。",
+        a: "ヨウ素（毒物）"
+    },
+    {
+        category: "劇物・性状",
+        q: "【性状】常温で無色の特異な刺激臭を持つ液体。空気中で発熱・発煙し、強いアルカリ性を示す。",
+        a: "ヒドラジン（劇物）"
+    },
+    {
+        category: "劇物・性状",
+        q: "【性状】特異なにおいを有する無色〜淡黄色の液体。水には溶けにくく、皮膚に触れると壊死・白斑を生じさせる。硝酸銀や塩化鉄(III)との反応で特徴的な呈色を示す。",
+        a: "フェノール（劇物）"
+    }
+];
+
+let quizData = [...initialDataset];
+let currentIndex = 0;
+let weakList = JSON.parse(localStorage.getItem('dokugeki_weak') || '[]');
+
+function initQuiz() {
+    updateStats();
+    if (quizData.length === 0) {
+        document.getElementById('q-category').textContent = "完了";
+        document.getElementById('q-text').textContent = "すべての問題を演習しました！";
+        document.getElementById('control-panel').classList.add('hidden');
+        return;
+    }
+    showQuestion();
+}
+
+function showQuestion() {
+    const q = quizData[currentIndex];
+    document.getElementById('q-category').textContent = q.category;
+    document.getElementById('q-text').textContent = q.q;
+    document.getElementById('a-text').innerText = q.a;
+    
+    document.getElementById('a-box').style.display = 'none';
+    document.getElementById('btn-show-answer').classList.remove('hidden');
+    document.getElementById('judge-buttons').classList.add('hidden');
+}
+
+function showAnswer() {
+    document.getElementById('a-box').style.display = 'block';
+    document.getElementById('btn-show-answer').classList.add('hidden');
+    document.getElementById('judge-buttons').classList.remove('hidden');
+}
+
+function answerResult(isCorrect) {
+    const currentQ = quizData[currentIndex];
+    
+    if (!isCorrect) {
+        if (!weakList.some(item => item.q === currentQ.q)) {
+            weakList.push(currentQ);
+            localStorage.setItem('dokugeki_weak', JSON.stringify(weakList));
+        }
+    }
+    
+    currentIndex++;
+    if (currentIndex >= quizData.length) {
+        alert("1周完了しました！");
+        currentIndex = 0;
+    }
+    initQuiz();
+}
+
+function updateStats() {
+    document.getElementById('current-index').textContent = quizData.length ? currentIndex + 1 : 0;
+    document.getElementById('total-count').textContent = quizData.length;
+    document.getElementById('weak-count').textContent = weakList.length;
+}
+
+function filterWeak() {
+    if (weakList.length === 0) {
+        alert("苦手リストに登録されている問題はありません。");
+        return;
+    }
+    quizData = [...weakList];
+    currentIndex = 0;
+    document.getElementById('control-panel').classList.remove('hidden');
+    initQuiz();
+}
+
+function resetAll() {
+    quizData = [...initialDataset];
+    currentIndex = 0;
+    document.getElementById('control-panel').classList.remove('hidden');
+    initQuiz();
+}
+
+initQuiz();
+</script>
+</body>
+</html>
