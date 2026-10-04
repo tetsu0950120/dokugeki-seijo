@@ -358,12 +358,22 @@ const initialDataset = [
 {
             q: "【別名】ホスフィン\n【性状】自然発火性物質。腐った魚の臭い",
             a: ["燐化水素"],
-},
+},    
 ];
 
-let quizData = [...initialDataset];
+let quizData = [];
 let currentIndex = 0;
 let weakList = JSON.parse(localStorage.getItem('dokugeki_weak') || '[]');
+
+// 配列をシャッフルする関数（ダステンフェルドの手法）
+function shuffleArray(array) {
+    const clone = [...array];
+    for (let i = clone.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [clone[i], clone[j]] = [clone[j], clone[i]];
+    }
+    return clone;
+}
 
 function initQuiz() {
     updateStats();
@@ -403,7 +413,8 @@ function answerResult(isCorrect) {
     
     currentIndex++;
     if (currentIndex >= quizData.length) {
-        alert("1周完了しました！");
+        alert("1周完了しました！問題を再シャッフルします。");
+        quizData = shuffleArray(quizData);
         currentIndex = 0;
     }
     initQuiz();
@@ -420,20 +431,21 @@ function filterWeak() {
         alert("苦手リストに登録されている問題はありません。");
         return;
     }
-    quizData = [...weakList];
+    quizData = shuffleArray(weakList);
     currentIndex = 0;
     document.getElementById('control-panel').classList.remove('hidden');
     initQuiz();
 }
 
 function resetAll() {
-    quizData = [...initialDataset];
+    quizData = shuffleArray(initialDataset);
     currentIndex = 0;
     document.getElementById('control-panel').classList.remove('hidden');
     initQuiz();
 }
 
-initQuiz();
+// 初期化（シャッフルして開始）
+resetAll();
 </script>
 </body>
 </html>
